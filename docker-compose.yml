@@ -1,0 +1,80 @@
+version: '3.7'
+
+services:
+    mal2-nginx:
+        image: nginx:latest
+        container_name: mal2-fakeshop-plugin_nginx
+        restart: always
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./nginx_config.conf:/etc/nginx/conf.d/default.conf
+            - ./frontend-static/www:/etc/nginx/frontend-static/www
+            #contains the letsencrypt mal2.ait.ac.at certificate
+            - /etc/letsencrypt/live:/etc/letsencrypt/live:ro # current certificate
+            - /etc/letsencrypt/archive:/etc/letsencrypt/archive:ro # all certificates (symlinks from /live points here)
+            #expose logs to host
+            - ./logs/nginx:/var/log/nginx 
+        depends_on:
+            - mal2-rest-api
+            - mal2-rest-db
+            
+    #Note postgres executes initdb.sh when launched
+    mal2-rest-db:
+        image: postgres:11.5
+        container_name: mal2-fakeshop-plugin_rest-api_db
+        #restart container on system restart or docker daemon restart
+        restart: always
+        volumes:
+            # execute mal2 db setup script on docker postgres init 
+            - ./backend-api-server/init-mal2-db.sh:/docker-entrypoint-initdb.d/initdb.sh
+            # persist db data on docker host system under ./_dbdata
+            # Note: windows remove the line below due to https://stackoverflow.com/questions/49148754/docker-container-shuts-down-giving-data-directory-has-wrong-ownership-error-wh
+            - ./backend-api-server/db_data:/var/lib/postgresql/data/pgdata
+            # make sure database uses same timezone and syncs with localtime from host
+            - /etc/timezone:/etc/timezone:ro
+            - /etc/localtime:/etc/localtime:ro
+        ports:
+            #expose sql db on port 54320 on host system
+            - 54320:5432
+          
+        environment:
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: postgres
+            PGDATA: /var/lib/postgresql/data/pgdata
+            #SCHEMA: public
+            #ANON: web_anon
+            #AUTHENTICATOR: authenticator
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            #don't use curl @see https://github.com/peter-evans/docker-compose-healthcheck
+            #test: ["CMD", "curl", "-f", "http://127.0.0.1:54320"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+  
+    mal2-rest-api:
+        container_name: mal2-fakeshop-plugin_rest-api_server
+        build: 
+            context: .
+            dockerfile: ./backend-api-server/docker/Dockerfile
+            #override by calling docker-compose build --build-arg ENDPOINT_BASE=mal2.ait.ac.at
+            args:
+                - ENDPOINT_BASE=localhost
+                - ENDPOINT_PORT=8081
+        links:
+            - mal2-rest-db
+        volumes:
+            # make sure database uses same timezone and syncs with localtime from host
+            - /etc/timezone:/etc/timezone:ro
+            - /etc/localtime:/etc/localtime:ro
+            # expose logs to host
+            - ./logs/rest-api:/mal2/rest-api/logs #expose logs to host
+            # expose exported predictions csv to host
+            - ./backend-api-server/predictions:/mal2/rest-api/swagger_server/resources/predictions
+        ports:
+            - 8081:8081
+        #required as initial db initialization starts, fails (logical replication launcher) and restarts, therefore healthcheck triggered too early.
+        restart: on-failure
+        #network: no need for defining a network: a common network is created for all services

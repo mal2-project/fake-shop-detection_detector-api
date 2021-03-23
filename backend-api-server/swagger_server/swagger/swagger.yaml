@@ -1,0 +1,945 @@
+openapi: 3.0.1
+info:
+  title: Fake-Shop Detector API
+  description: REST Interface for MAL2 AI Fake-Shop Detector
+  contact:
+    name: Austrian Institute of Technology (AIT)
+    email: andrew.lindley@ait.ac.at
+  license:
+    name: EUPL v1.2
+  version: "1.1"
+servers:
+- url: https://127.0.0.1:8080/malzwei/ecommerce/1.1
+tags:
+- name: plugin
+  description: public browser plugin
+  externalDocs:
+    description: Find out more
+    url: http://www.malzwei.at
+- name: expert
+  description: curation and stats
+- name: admin
+  description: system management
+paths:
+  /analyze:
+    post:
+      tags:
+      - plugin
+      summary: request Fake-Score analysis result of a given site
+      description: returns the Fake-Score Analysis of a given site, either mal2_ai
+        prediction or Whitelist/Blacklist entry
+      operationId: analyze_post
+      requestBody:
+        description: site and parameter configuration on which to run analysis on
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/site'
+        required: true
+      responses:
+        "200":
+          description: Successfully returned analysis of site
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site-Analysis-Result'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+        "401":
+          description: Experiencing a high number of service requests. Please try again later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+      x-swagger-router-controller: swagger_server.controllers.default_controller
+      x-codegen-request-body-name: site
+      x-openapi-router-controller: swagger_server.controllers.plugin_controller
+  /whitelist/{site_id}:
+    get:
+      tags:
+      - plugin
+      summary: returns information on a specific whitelisted site
+      description: returns information on a specific whitelisted site
+      operationId: whitelist_site_id_get
+      parameters:
+      - name: site_id
+        in: path
+        description: requested site_id as returned by /analyze
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: clientID
+        in: query
+        description: client ID for debugging purposes on server
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully returned a whitelisted entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/White-List-Entry'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+        "401":
+          description: Experiencing a high number of service requests. Please try again later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+      x-swagger-router-controller: swagger_server.controllers.default_controller
+      x-openapi-router-controller: swagger_server.controllers.plugin_controller
+  /whitelist:
+    get:
+      tags:
+      - plugin
+      summary: returns all whitelisted shops
+      description: Returns a list of all whitelisted shops
+      operationId: whitelist_get
+      parameters:
+      - name: limit
+        in: query
+        description: 'Limits the number of items returned per page. '
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        description: Specifies the page offset starting at page zero
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+      - name: all
+        in: query
+        description: reuturns all known items in one request - if true limit and offset
+          parameters are ignored
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+          default: true
+      - name: clientID
+        in: query
+        description: client ID for debugging purposes on server
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully returned a list of whitelisted entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/White-List-Entry'
+                x-content-type: application/json
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+        "401":
+          description: Experiencing a high number of service requests. Please try again later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+      x-swagger-router-controller: swagger_server.controllers.default_controller
+      x-openapi-router-controller: swagger_server.controllers.plugin_controller
+  /blacklist/{site_id}:
+    get:
+      tags:
+      - plugin
+      summary: returns information on a specific blacklisted site
+      description: Returns information on a specific blacklist site
+      operationId: blacklist_site_id_get
+      parameters:
+      - name: site_id
+        in: path
+        description: requested site_id as returned by /analyze
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: clientID
+        in: query
+        description: client ID for debugging purposes on server
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully returned a confirmed fake-shop entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Black-List-Entry'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+        "401":
+          description: Experiencing a high number of service requests. Please try again later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+      x-swagger-router-controller: swagger_server.controllers.default_controller
+      x-openapi-router-controller: swagger_server.controllers.plugin_controller
+  /blacklist:
+    get:
+      tags:
+      - plugin
+      summary: returns all blacklisted shops
+      description: Returns a list of all blacklisted and confirmed fake-shops
+      operationId: blacklist_get
+      parameters:
+      - name: limit
+        in: query
+        description: 'Limits the number of items returned per page. '
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        description: Specifies the page offset starting at page zero
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+      - name: all
+        in: query
+        description: reuturns all known items in one request - if true limit and offset
+          parameters are ignored
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+          default: true
+      - name: clientID
+        in: query
+        description: client ID for debugging purposes on server
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully returned a list of confirmed fake-shop entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Black-List-Entry'
+                x-content-type: application/json
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+        "401":
+          description: Experiencing a high number of service requests. Please try again later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+      x-swagger-router-controller: swagger_server.controllers.default_controller
+      x-openapi-router-controller: swagger_server.controllers.plugin_controller
+  /greylist/{site_id}:
+    get:
+      tags:
+      - plugin
+      summary: returns information on a specific greylisted site
+      description: Returns information on a specific greylist site
+      operationId: greylist_site_id_get
+      parameters:
+      - name: site_id
+        in: path
+        description: requested site_id as returned by /analyze
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: clientID
+        in: query
+        description: client ID for debugging purposes on server
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully returned a greylisted entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grey-List-Entry'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+        "401":
+          description: Experiencing a high number of service requests. Please try again later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+      x-swagger-router-controller: swagger_server.controllers.default_controller
+      x-openapi-router-controller: swagger_server.controllers.plugin_controller
+  /greylist:
+    get:
+      tags:
+      - plugin
+      summary: returns all greylisted shops
+      description: Returns a list of all greylisted fake-shops
+      operationId: greylist_get
+      parameters:
+      - name: limit
+        in: query
+        description: 'Limits the number of items returned per page. '
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        description: Specifies the page offset starting at page zero
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+      - name: all
+        in: query
+        description: returns all known items in one request - if true limit and offset
+          parameters are ignored
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+          default: true
+      - name: clientID
+        in: query
+        description: client ID for debugging purposes on server
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully returned a list of greylisted shop entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Grey-List-Entry'
+                x-content-type: application/json
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+        "401":
+          description: Experiencing a high number of service requests. Please try
+            again later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+      x-swagger-router-controller: swagger_server.controllers.default_controller
+      x-openapi-router-controller: swagger_server.controllers.plugin_controller
+  /ignorelist/{site_id}:
+    get:
+      tags:
+      - plugin
+      summary: returns information on a specific ignorelisted site
+      description: Returns information on a specific website on which the MAL2 plugin
+        won't operated upon as it is not a online shop, e.g. such as news sites as
+        orf.at, falter.at, etc.
+      operationId: ignorelist_site_id_get
+      parameters:
+      - name: site_id
+        in: path
+        description: requested site_id as returned by /analyze
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: clientID
+        in: query
+        description: client ID for debugging purposes on server
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully returned a confirmed ignore list entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ignore-List-Entry'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+        "401":
+          description: Experiencing a high number of service requests. Please try again later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+      x-swagger-router-controller: swagger_server.controllers.default_controller
+      x-openapi-router-controller: swagger_server.controllers.plugin_controller
+  /ignorelist:
+    get:
+      tags:
+      - plugin
+      summary: returns all ignorelisted shops
+      description: Returns a list of all websites on the ignorelist on which the MAL2
+        Plugin won't operated upon as they are no online shops such as news outlets
+        as orf.at or falter.at
+      operationId: ignorelist_get
+      parameters:
+      - name: limit
+        in: query
+        description: 'Limits the number of items returned per page. '
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        description: Specifies the page offset starting at page zero
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+      - name: all
+        in: query
+        description: reuturns all known items in one request - if true limit and offset
+          parameters are ignored
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+          default: true
+      - name: clientID
+        in: query
+        description: client ID for debugging purposes on server
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully returned a list of all sites that are on at leas
+            one ore more ignorelists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ignore-List-Entry'
+                x-content-type: application/json
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+        "401":
+          description: Experiencing a high number of service requests. Please try again later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+      x-swagger-router-controller: swagger_server.controllers.default_controller
+      x-openapi-router-controller: swagger_server.controllers.plugin_controller
+  /reanalyze:
+    post:
+      tags:
+      - expert
+      summary: request Fake-Score re-analysis of a given site
+      description: returns the Fake-Score Re-Analysis through the mal2_ai if the site
+        is not a Whitelist/Blacklist entry
+      operationId: reanalyze_post
+      requestBody:
+        description: site and parameter configuration on which to run re-analysis
+          on
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/site'
+        required: true
+      responses:
+        "200":
+          description: Successfully returned analysis of site
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site-Analysis-Result'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+        "401":
+          description: Experiencing a high number of service requests. Please try again later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+      security:
+      - adminuserAuth:
+        - adminuser
+      - expertuserAuth:
+        - expertuser
+      x-swagger-router-controller: swagger_server.controllers.default_controller
+      x-codegen-request-body-name: site
+      x-openapi-router-controller: swagger_server.controllers.expert_controller
+components:
+  schemas:
+    Site-Analysis-Result:
+      type: object
+      properties:
+        site_id:
+          type: string
+        site_url:
+          type: string
+        analyzed_date_time:
+          type: string
+          format: date-time
+        processor:
+          type: string
+          enum:
+          - whitelist
+          - blacklist
+          - ignorelist
+          - greylist
+          - mal2_ai
+        risk_score:
+          type: string
+          enum:
+          - very low
+          - low
+          - below average
+          - above average
+          - high
+          - very high
+          - unknown
+      description: Site Analysis Results as returned by the server
+      example:
+        analyzed_date_time: {}
+        site_url: http://example.com
+        risk_score: low
+        site_id: site_id
+        processor: mal2ai
+    White-List-Entry:
+      type: object
+      properties:
+        site_id:
+          type: string
+          description: ID as provided by the server
+        site_baseURL:
+          type: string
+          example: http://www.0815.eu
+        site-added-date:
+          type: string
+          format: date
+        site-information-link:
+          type: string
+          example: https://www.guetezeichen.at/zertifikate/shopzertifikat/www0815eu/
+        whitelist_type:
+          type: string
+          description: classification of whitelist type either a dedicated trustmark
+            or other secure listing
+          enum:
+          - trustmark
+          - secure_listing
+        whitelist-name:
+          type: string
+          example: Österreichisches E-Commerce-Gütezeichen
+        whitelist-description:
+          type: string
+          example: explanation of this whitelist
+        whitelist-logo:
+          type: string
+          example: https://www.guetezeichen.at/fileadmin/_processed_/5/0/csm_logo-perspektive_01_4e499b06e5.png
+        whitelist-url:
+          type: string
+          example: http://www.guetezeichen.at
+        company-name:
+          type: string
+          example: 0815 Online Handel GmbH
+        company-street:
+          type: string
+          example: Rinnböckstraße 3
+        company-zipcode:
+          type: integer
+          example: 1030
+        company-city:
+          type: string
+          example: Wien
+        company-country:
+          type: string
+          example: Österreich
+        company-logo:
+          type: string
+          example: https://www.guetezeichen.at/fileadmin/user_upload/0815_neu.png
+      description: known metadata of a whitelist entry
+      example:
+        whitelist-name: Österreichisches E-Commerce-Gütezeichen
+        whitelist-description: Austrian ecommerce shops that carry the e-commerce
+          trustmark
+        whitelist-logo: https://www.guetezeichen.at/fileadmin/_processed_/5/0/csm_logo-perspektive_01_4e499b06e5.png
+        whitelist-url: http://www.guetezeichen.at
+        whitelist_type: trustmark
+        company-name: 0815 Online Handel GmbH
+        company-logo: https://www.guetezeichen.at/fileadmin/user_upload/0815_neu.png
+        company-country: Österreich
+        company-street: Rinnböckstraße 3
+        company-city: Wien
+        company-zipcode: 1030
+        site_id: site_id
+        site_baseURL: http://www.0815.eu
+        site-added-date: 05.12.2019
+        site-information-link: https://www.guetezeichen.at/zertifikate/shopzertifikat/www0815eu/
+    Black-List-Entry:
+      type: object
+      properties:
+        site_id:
+          type: string
+          description: ID as provided by the server
+        site_baseURL:
+          type: string
+          example: http://endlich-windelfrei.de
+        blacklist-name:
+          type: string
+          example: Watchlist Internet
+        blacklist-description:
+          type: string
+          example: explanation of this blacklist
+        blacklist-logo:
+          type: string
+          example: https://www.watchlist-internet.at/fileadmin/files/Logos/Logo_Watchlist_Internet_300RGB.jpg
+        blacklist-url:
+          type: string
+          example: http://watchlist-internet.at
+        site-added-date:
+          type: string
+          format: date
+        site-type:
+          type: string
+          description: "classification of fraudulent ecommerce sites based on the\
+            \ classification provided by https://www.watchlist-internet.at\nfraudulent_online_shop\
+            \ and brand_counterfeiter - Unfortunately, more and more consumers are\
+            \ becoming victims of fraudulent Internet ecommerce. Sites as the Watchlist\
+            \ Internet provide manually currated lists of online shops that, despite\
+            \ payment, do not deliver any goods (fraudulent_online_shops i.e. fake\
+            \ shops) or sell counterfeit goods or are only out for collecting your\
+            \ data (fraudulent_brand_counterfeiter).\nfraudulent_streaming_platform\
+            \ - Streaming platforms that advertise with a free registration but illicitly\
+            \ request a premium-fee. Watchlist Internet provides a list of fraudulent\
+            \ streaming platforms\nfraudulent_real_estate_agency - dubious real estate\
+            \ agencies that are known in connection or are classified as ad scams.\n\
+            fraudulent_travel_agency_or_booking_platform - fraudulent online travel\
+            \ agencies and hotel booking platforms. Criminals create websites with\
+            \ tempting offers. Some of the websites are similar to well-known holiday\
+            \ platforms to build trust. Bookings from such websites never reach the\
+            \ actual accommodations and airlines despite prepayments. Transferred\
+            \ money is usually lost and ends up in the hands of criminals. Subscription\
+            \ traps are also known in connection with fraudulent holiday platforms.\n\
+            fraudulent_craft_services - Reports on fraudulent key services, installers,\
+            \ moving and electrical companies or other craft services to the Watchlist\
+            \ Internet. The victims report inferior completion of the tasks and usury\
+            \ prices. Payments must be made in cash immediately. A later complaint\
+            \ is not possible due to missing or insufficient company and contact details.\n\
+            fraudulent_freight_forwarders -  dubious freight forwarders are constantly\
+            \ reported. Particular caution is required here when buying a car or buying\
+            \ bulky goods using classified ads. Criminals advertise tempting offers\
+            \ on classifieds portals and invent reasons for processing through a shipping\
+            \ company. The websites of the alleged delivery services and shipping\
+            \ companies are created by the criminals themselves. The companies do\
+            \ not exist and all payments for deliveries, cars, motorbikes, campers,\
+            \ tractors, fuel and other goods are lost and end up in the hands of the\
+            \ criminals.\nfraudulent_survey_platform - Fraudulent survey platforms\
+            \ and market research portals are regularly reported to the Watchlist\
+            \ Internet. Criminals advertise easy earning opportunities on job portals\
+            \ by participating in studies. For this purpose, ID documents should be\
+            \ shared when registering. Criminals use this to open an account with\
+            \ banks and pretend to their victims that a video identification process\
+            \ of a bank should be tested as part of the first survey. This gives criminals\
+            \ a bank account on behalf of their victims that can be used for money\
+            \ laundering. "
+          enum:
+          - fraudulent_online_shop
+          - fraudulent_brand_counterfeiter
+          - fraudulenty_streaming_platform
+          - fraudulent_real_estate_agency
+          - fraudulent_travel_agency_or_booking_platform
+          - fraudulent_craft_service
+          - fraudulent_freight_forwarder
+          - fraudulent_survey_platform
+        site-screenshot:
+          type: string
+          example: https://www.watchlist-internet.at/fileadmin/_processed_/d/3/csm_nerdfreevpn.net_Startseite_ea966a4b59.png
+        site-information-link:
+          type: string
+          example: https://www.watchlist-internet.at/search/?id=153&tx_kesearch_pi1[sword]=vpn4test.com
+      example:
+        blacklist-name: Watchlist Internet Warnmeldungen
+        blacklist-description: List of manually checked and confirmed cases which
+          is publically available at Watchlist Internet.
+        blacklist-logo: https://www.watchlist-internet.at/fileadmin/files/Logos/Logo_Watchlist_Internet_300RGB.jpg
+        blacklist-url: https://www.watchlist-internet.at
+        site-screenshot: https://www.watchlist-internet.at/fileadmin/_processed_/d/3/csm_nerdfreevpn.net_Startseite_ea966a4b59.png
+        site-information-link: https://www.watchlist-internet.at/search/?id=153&tx_kesearch_pi1[sword]=vpn4test.com
+        site-added-date: 28.10.2019
+        site-type: fraudulent_online_shop
+        site_id: site_id
+        site_baseURL: http://vpn4test.com
+    Grey-List-Entry:
+      type: object
+      properties:
+        site_id:
+          type: string
+          description: ID as provided by the server
+        site_baseURL:
+          type: string
+          example: http://365ersatzteile.de
+        greylist-name:
+          type: string
+          example: Watchlist Internet
+        greylist-description:
+          type: string
+          example: explanation of this greylist
+        greylist-logo:
+          type: string
+          example: https://www.watchlist-internet.at/fileadmin/files/Logos/Logo_Watchlist_Internet_300RGB.jpg
+        greylist-url:
+          type: string
+          example: http://watchlist-internet.at
+        site-added-date:
+          type: string
+          format: date
+        site-type:
+          type: string
+          description: selection in which type the site is classified
+          enum:
+          - shop_dropshipping
+          - shop_not_located_in_the_eu
+        site-screenshot:
+          type: string
+          example: https://www.watchlist-internet.at/fileadmin/_processed_/d/3/csm_nerdfreevpn.net_Startseite_ea966a4b59.png
+        site-information-link:
+          type: string
+          example: "https://www.watchlist-internet.at/search/?id=153&tx_kesearch_pi1[sword]=vpn4test.com"
+      example:
+        greylist-name: Watchlist Internet Warnmeldungen
+        greylist-description: List of manually checked grey cases of potentially suspicious
+          sites that are publically available at Watchlist Internet.
+        greylist-logo: https://www.watchlist-internet.at/fileadmin/files/Logos/Logo_Watchlist_Internet_300RGB.jpg
+        greylist-url: https://www.watchlist-internet.at
+        site-screenshot: https://www.watchlist-internet.at/fileadmin/_processed_/d/3/csm_nerdfreevpn.net_Startseite_ea966a4b59.png
+        site-information-link: "https://www.watchlist-internet.at/search/?id=153&tx_kesearch_pi1[sword]=365ersatzteile.de"
+        site-added-date: 28.10.2019
+        site-type: shop_dropshipping
+        site_id: site_id
+        site_baseURL: http://365ersatzteile.de
+    Ignore-List-Entry:
+      type: object
+      properties:
+        site_id:
+          type: string
+          description: ID as provided by the server
+        site_baseURL:
+          type: string
+          example: http://www.orf.at
+        ignorelist-name:
+          type: string
+          example: Austrian News Sites
+        ignorelist-description:
+          type: string
+          example: explanation of this ignorelist
+        ignorelist-url:
+          type: string
+          example: http://www.guetezeichen.at
+        ignorelist-logo:
+          type: string
+          example: https://malzwei.at/@@site-logo/MalZwei_Logo_black.svg
+        site-added-date:
+          type: string
+          format: date
+        site-type:
+          type: string
+          description: 'classification of websitesite type ecommerce - An ecommerce
+            website is any website that directly sells a product or service. Not to
+            be confused with a business website, with an ecommerce website you can
+            add products or services into your cart, and pay for them through the
+            site media_or_entertainment - Media websites contain regularly updated
+            content on current affairs, weather, sports and entertainment. News sites
+            like CNN and entertainment sites like ELLE both fall into this category.
+            The content on media sites is dynamic, meaning it’s updated regularly.
+            Big media sites will publish multiple articles and videos every single
+            day. blog - A blog is a website that’s regularly updated, run by one person
+            or a small group, and is normally written in a laid-back style business
+            - A business website is any kind of website that describes your business.
+            crowdfunding - Crowdfunding websites work by taking ‘pledges’ of different
+            amounts from lots of people, in order to hit the target amount needed
+            to produce the product educational - The term ‘educational’ covers a broad
+            range of websites.Educational websites use any combination of games, articles,
+            videos and images to educate their audience. These might be geared towards
+            fun learning for children, or offer courses to adults, such as Coursera
+            and EdX. nonprofit - Nonprofits may not be classed as businesses in the
+            same way, but they still need a website. These will generally be quite
+            simple, outlining what the nonprofit is about and showing visitors how
+            they can get involved, donate, or support in some other way. personal
+            - Website that''s dedicated to your ‘personal brand’ not a business website.
+            portfolio - If you’re a writer, artist or designer, you’ll want to go
+            one step further than a personal website. These are a way for creatives
+            to showcase their work to future employees, market themselves as freelancers,
+            and generally get their name (and work) out into the big wide world. portal
+            - Portal websites, like Yahoo, bring together information from lots of
+            different sites and present them in one place. Web portals can be internal
+            websites for organizations like schools, or for big businesses. It’s a
+            centralized place to share news, training and updates, and for students
+            or employees to access their emails and files. Users will need their own
+            specific login to access these portals. social_media - A special form
+            of portal. Social media refers to websites and applications that are designed
+            to allow people to share content quickly, efficiently, and in real-time.
+            ... The ability to share photos, opinions, events, etc search_engine -
+            Specific site for content discovery on the web or within a limited section
+            of the web internet_forum - A specific form of portal that is mainly dedicated
+            to information exchange with other users. webbased_application - machine
+            to machine interaction or user gateway for users interacting with an application
+            that does not match the other types unknown - uncategorized '
+          enum:
+          - ecommerce
+          - media_or_entertainment
+          - blog
+          - business
+          - crowdfunding
+          - educational
+          - nonprofit
+          - personal
+          - portfolio
+          - portal
+          - social_media
+          - search_engine
+          - internet_forum
+          - webbased_application
+          - unknown
+      example:
+        site_id: site_id
+        site-added-date: 28.10.2019
+        site_baseURL: http://www.orf.at
+        site-type: media_or_entertainment
+        ignorelist-name: MAL2 ignorelist
+        ignorelist-description: list of domains the MAL2 project has collected on
+          which the Fake-Shop Detection Plugin should not be executed upon
+        ignorelist-logo: https://malzwei.at/@@site-logo/MalZwei_Logo_black.svg
+    site:
+      required:
+      - site_baseURL
+      type: object
+      properties:
+        site_baseURL:
+          type: string
+          description: the site base url to analyze
+          example: http://www.fakeshop.com
+        re_process:
+          type: boolean
+          description: ask the server to run re-analys of site. Site is only processed
+            by the MAL2 models if the site is not whitelisted, blacklisted greylisted or ignorelisted
+          default: false
+        clientID:
+          type: string
+          description: client ID for debugging purposes on server
+    inline_response_400:
+      type: object
+      properties:
+        message:
+          type: string
+  securitySchemes:
+    adminuserAuth:
+      type: apiKey
+      description: Enter your bearer token in the format **Bearer &lt;token>** An
+        individual auth methods e.g. check_adminAuth per application scope is used
+        as OpenAPI 3.0 only supports apiKey validation on a global API scheme, but
+        not with individual scopes per endpoint. (support added with OpenAPI 3.1)
+      name: Authorization
+      in: header
+      x-apikeyInfoFunc: swagger_server.controllers.authorization_controller.check_adminuserAuth
+    expertuserAuth:
+      type: apiKey
+      description: Enter your bearer token in the format **Bearer &lt;token>** An
+        individual auth methods e.g. check_expertuserAuth per application scope is
+        used as OpenAPI 3.0 only supports apiKey validation on a global API scheme,
+        but not with individual scopes per endpoint. (support added with OpenAPI 3.1)
+      name: Authorization
+      in: header
+      x-apikeyInfoFunc: swagger_server.controllers.authorization_controller.check_expertuserAuth
+    statsuserAuth:
+      type: apiKey
+      description: Enter your bearer token in the format **Bearer &lt;token>** An
+        individual auth methods e.g. check_statsuserAuth per application scope is
+        used as OpenAPI 3.0 only supports apiKey validation on a global API scheme,
+        but not with individual scopes per endpoint. (support added with OpenAPI 3.1)
+      name: Authorization
+      in: header
+      x-apikeyInfoFunc: swagger_server.controllers.authorization_controller.check_statsuserAuth
+

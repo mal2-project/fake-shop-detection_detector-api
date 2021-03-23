@@ -1,0 +1,40 @@
+version: '3.7'
+
+services:
+    
+            
+    #Note postgres executes initdb.sh when launched
+    mal2-rest-db:
+        image: postgres:11.5
+        container_name: mal2-fakeshop-plugin_rest-api_db
+        #restart container on system restart or docker daemon restart
+        #restart: always
+        volumes:
+            # execute mal2 db setup script on docker postgres init 
+            - ./backend-api-server/init-mal2-db.sh:/docker-entrypoint-initdb.d/initdb.sh
+            # persist db data on docker host system under ./_dbdata
+            # Note: windows remove the line below due to https://stackoverflow.com/questions/49148754/docker-container-shuts-down-giving-data-directory-has-wrong-ownership-error-wh
+            #- ./backend-api-server/db_data:/var/lib/postgresql/data/pgdata
+            - /home/lindleya/temp_mal2/db_data:/var/lib/postgresql/data/pgdata
+            # make sure database uses same timezone and syncs with localtime from host
+            - /etc/timezone:/etc/timezone:ro
+            - /etc/localtime:/etc/localtime:ro
+        ports:
+            #expose sql db on port 54320 on host system
+            - 54320:5432
+          
+        environment:
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: postgres
+            PGDATA: /var/lib/postgresql/data/pgdata
+            #SCHEMA: public
+            #ANON: web_anon
+            #AUTHENTICATOR: authenticator
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            #don't use curl @see https://github.com/peter-evans/docker-compose-healthcheck
+            #test: ["CMD", "curl", "-f", "http://127.0.0.1:54320"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+  
